@@ -31,10 +31,15 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [saveError, setSaveError] = useState(false);
   const refresh = () => topScores(3).then(setTop).catch(() => undefined);
+  // Keep the podium live: other guests' scores appear within a few seconds.
   useEffect(() => {
     refresh();
-  }, []);
+    if (phase === "countdown" || phase === "playing") return;
+    const id = window.setInterval(refresh, 4000);
+    return () => window.clearInterval(id);
+  }, [phase]);
   const nextId = useRef(0);
   const startedAt = useRef(0);
 
@@ -125,10 +130,13 @@ export function BalloonGame({ defaultName, onExit }: Props) {
 
   async function save() {
     setSaving(true);
+    setSaveError(false);
     try {
-      await addScore({ score, name: name.trim() || "Mystery guest" });
+      await addScore({ score, name: name.trim() });
       await refresh();
       setSaved(true);
+    } catch {
+      setSaveError(true);
     } finally {
       setSaving(false);
     }
@@ -211,8 +219,9 @@ export function BalloonGame({ defaultName, onExit }: Props) {
                 <span>Put your name on the board</span>
                 <input id="game-name" autoComplete="off" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
               </label>
-              <button type="submit" className="primary" disabled={saving}>
-                {saving ? "Saving..." : "Save my score"}
+              {saveError && <p className="error">That didn't save. Check your signal and try again.</p>}
+              <button type="submit" className="primary" disabled={saving || !name.trim()}>
+                {saving ? "Saving..." : name.trim() ? "Save my score" : "Add your name to save"}
               </button>
             </form>
           )}
