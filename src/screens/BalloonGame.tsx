@@ -195,7 +195,6 @@ export function BalloonGame({ defaultName, onExit }: Props) {
         <>
           <h1 className="display shine">Balloon pop challenge</h1>
           <p className="lead">Pop as many balloons as you can in {GAME_SECONDS} seconds. They get faster as the clock runs down.</p>
-          <h2>Top three on {THIS_DEVICE === "mobile" ? "phones" : "laptops"}</h2>
           {podium}
           <button type="button" className="primary big" onClick={start}>
             Start
@@ -249,7 +248,6 @@ export function BalloonGame({ defaultName, onExit }: Props) {
           )}
           {(saved || !madeTop3) && (
             <>
-              <h2>Top three on {THIS_DEVICE === "mobile" ? "phones" : "laptops"}</h2>
               {podium}
               <div className="actions">
                 <button type="button" className="primary" onClick={start}>
