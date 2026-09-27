@@ -27,3 +27,17 @@ alter table public.balloon_scores enable row level security;
 
 create policy "guests can add scores" on public.balloon_scores for insert to anon with check (true);
 create policy "guests can read scores" on public.balloon_scores for select to anon using (true);
+
+-- Guinness records guests have chosen, so each record goes to one guest or crew.
+create table if not exists public.record_picks (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  names text not null check (char_length(names) between 1 and 400),
+  record_id text not null check (char_length(record_id) between 1 and 120),
+  record_title text not null check (char_length(record_title) between 1 and 200)
+);
+
+alter table public.record_picks enable row level security;
+
+create policy "guests can add picks" on public.record_picks for insert to anon with check (true);
+create policy "guests can read picks" on public.record_picks for select to anon using (true);

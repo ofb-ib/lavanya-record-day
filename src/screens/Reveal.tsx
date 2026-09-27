@@ -8,12 +8,13 @@ import { Seal } from "../Decor";
 interface Props {
   record: WorldRecord;
   answers: Answers;
-  onAttempt: () => void;
+  onChoose: () => void;
+  choosing: boolean;
   onAnother: () => void;
   onNextPerson: () => void;
 }
 
-export function Reveal({ record: r, answers, onAttempt, onAnother, onNextPerson }: Props) {
+export function Reveal({ record: r, answers, onChoose, choosing, onAnother, onNextPerson }: Props) {
   useEffect(() => burst(), [r.id]);
   const team = teamLine(r);
 
@@ -47,15 +48,15 @@ export function Reveal({ record: r, answers, onAttempt, onAnother, onNextPerson 
             ))}
           </ul>
         )}
-        <h2>Grab from the kit table</h2>
+        <h2>Kit you'll need</h2>
         <p>{r.kit.length ? r.kit.map(kitLabel).join(", ") : "No kit needed"}</p>
         <h2>Space</h2>
         <p>{r.space}</p>
       </div>
 
       <div className="actions">
-        <button type="button" className="primary" onClick={onAttempt}>
-          Let's do it
+        <button type="button" className="primary" onClick={onChoose} disabled={choosing}>
+          {choosing ? "Saving..." : "This is the one"}
         </button>
         <button type="button" className="secondary" onClick={onAnother}>
           Show me another

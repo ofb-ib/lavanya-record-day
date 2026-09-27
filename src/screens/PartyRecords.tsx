@@ -6,13 +6,15 @@ const GWR_APPLY_URL = "https://www.guinnessworldrecords.com/records/apply-to-set
 
 interface Props {
   defaultName: string;
+  defaultTitle?: string;
   onExit: () => void;
+  onPlay: () => void;
 }
 
 /** Guests add the record they are attempting, with the requirements Guinness sent them. */
-export function PartyRecords({ defaultName, onExit }: Props) {
+export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }: Props) {
   const [name, setName] = useState(defaultName);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(defaultTitle);
   const [requirements, setRequirements] = useState("");
   const [status, setStatus] = useState<"editing" | "saving" | "saved" | "error">("editing");
   const [entries, setEntries] = useState<AddedRecord[]>([]);
@@ -60,6 +62,13 @@ export function PartyRecords({ defaultName, onExit }: Props) {
           </button>
           <button type="button" className="secondary" onClick={onExit}>
             Back to the start
+          </button>
+        </div>
+
+        <div className="play-cta">
+          <p>While you wait: can you top the party leaderboard?</p>
+          <button type="button" className="primary" onClick={onPlay}>
+            Play the balloon pop challenge
           </button>
         </div>
       </section>

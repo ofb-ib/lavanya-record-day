@@ -41,11 +41,6 @@ export function teamLine(r: WorldRecord): string | null {
   return r.teamSize === 2 ? "Team of two" : `Team of ${r.teamSize}`;
 }
 
-export function peopleNeeded(r: WorldRecord): string | null {
-  if (r.format === "solo") return null;
-  if (r.teamSize === null) return "Any number of people.";
-  return `You need ${r.teamSize} people.`;
-}
 
 export const DIFFICULTY_WORDS = ["", "A real chance", "Possible with a good run", "Hard", "Moonshot"];
 
@@ -55,13 +50,4 @@ export function kitLabel(tag: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function beats(r: WorldRecord, score: number): boolean {
-  const target = r.recordValue ?? 0;
-  return r.measure === "fastest" ? score > 0 && score < target : score > target;
-}
 
-/** How far short of the record, in the record's own unit. */
-export function gap(r: WorldRecord, score: number): number {
-  const target = r.recordValue ?? 0;
-  return Math.abs(target - score);
-}

@@ -100,3 +100,51 @@ export async function addScore(entry: BalloonScore): Promise<void> {
     // Private mode: nothing is remembered.
   }
 }
+
+// ---------- Chosen Guinness records ----------
+// One row per guest (or crew) who commits to a record, so no one else is offered it.
+
+export interface RecordPick {
+  id?: number;
+  created_at?: string;
+  names: string;
+  record_id: string;
+  record_title: string;
+}
+
+const PICKS_TABLE = "record_picks";
+const LOCAL_PICKS_KEY = "lrd-record-picks";
+
+function readLocalPicks(): RecordPick[] {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_PICKS_KEY) ?? "[]") as RecordPick[];
+  } catch {
+    return [];
+  }
+}
+
+export async function listPicks(): Promise<RecordPick[]> {
+  if (sharedDb) {
+    const res = await fetch(`${URL}/rest/v1/${PICKS_TABLE}?select=names,record_id,record_title&limit=1000`, { headers: headers() });
+    if (!res.ok) throw new Error(`Load failed (${res.status})`);
+    return (await res.json()) as RecordPick[];
+  }
+  return readLocalPicks();
+}
+
+export async function addPick(pick: RecordPick): Promise<void> {
+  if (sharedDb) {
+    const res = await fetch(`${URL}/rest/v1/${PICKS_TABLE}`, {
+      method: "POST",
+      headers: { ...headers(), Prefer: "return=minimal" },
+      body: JSON.stringify(pick),
+    });
+    if (!res.ok) throw new Error(`Save failed (${res.status})`);
+    return;
+  }
+  try {
+    localStorage.setItem(LOCAL_PICKS_KEY, JSON.stringify([...readLocalPicks(), pick]));
+  } catch {
+    // Private mode: nothing is remembered.
+  }
+}

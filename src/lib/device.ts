@@ -1,5 +1,4 @@
 import confetti from "canvas-confetti";
-import type { WorldRecord } from "./types";
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -65,28 +64,4 @@ export async function keepAwake(on: boolean): Promise<void> {
   } catch {
     lock = null;
   }
-}
-
-const bestKey = (r: WorldRecord) => `lrd-best-${r.id}`;
-
-export function readBest(r: WorldRecord): number | null {
-  try {
-    const v = localStorage.getItem(bestKey(r));
-    return v === null ? null : Number(v);
-  } catch {
-    return null;
-  }
-}
-
-/** Saves the score if it is this phone's best. Returns the best after saving. */
-export function saveBest(r: WorldRecord, score: number): number {
-  const prev = readBest(r);
-  const better = prev === null || (r.measure === "fastest" ? score < prev : score > prev);
-  const best = better ? score : prev;
-  try {
-    localStorage.setItem(bestKey(r), String(best));
-  } catch {
-    // Private mode: keep going without saving.
-  }
-  return best;
 }

@@ -1,29 +1,34 @@
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 import { emptyAnswers, type Answers, type Bravery, type Format, type WorldRecord } from "./lib/types";
 import { BRAVERY_OPTIONS, FORMAT_OPTIONS, HOBBY_OPTIONS, QUIZ_OPTIONS, VIBE_OPTIONS } from "./lib/questions";
-import { claimRecord, rankRecords } from "./lib/match";
-import { BIRTHDAY_NAME, crewName } from "./lib/format";
+import { rankRecords } from "./lib/match";
+import { addPick, listPicks } from "./lib/db";
+import { crewName } from "./lib/format";
 import { MultiChoice, SingleChoice } from "./screens/Choice";
 import { Drumroll } from "./screens/Drumroll";
 import { Reveal } from "./screens/Reveal";
-import { Attempt } from "./screens/Attempt";
-import { Result } from "./screens/Result";
+import { Chosen } from "./screens/Chosen";
 import { Crew } from "./screens/Crew";
 import { BalloonGame } from "./screens/BalloonGame";
 import { PartyRecords } from "./screens/PartyRecords";
-import { Balloons, Sky, Trophy } from "./Decor";
+import { Balloons, Sky } from "./Decor";
+
 import { burst } from "./lib/device";
+
+const Hero3D = lazy(() => import("./Hero3D"));
 
 const ALL_QUESTIONS = ["name", "format", "crew", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
 type Question = (typeof ALL_QUESTIONS)[number];
-type Step = "welcome" | Question | "drumroll" | "reveal" | "attempt" | "result" | "game" | "party";
+type Step = "welcome" | Question | "drumroll" | "reveal" | "chosen" | "game" | "party";
 
 export default function App() {
   const [step, setStep] = useState<Step>("welcome");
   const [answers, setAnswers] = useState<Answers>(emptyAnswers);
   const [ranked, setRanked] = useState<WorldRecord[]>([]);
   const [index, setIndex] = useState(0);
-  const [score, setScore] = useState(0);
+  const [choosing, setChoosing] = useState(false);
+  const [chooseError, setChooseError] = useState(false);
+  const [bookTitle, setBookTitle] = useState("");
 
   const record = ranked[index];
   const set = (patch: Partial<Answers>) => setAnswers((a) => ({ ...a, ...patch }));
@@ -39,12 +44,35 @@ export default function App() {
     setStep(qIndex > 0 ? QUESTIONS[qIndex - 1] : "welcome");
   }
 
-  function finishQuestions(bravery: Bravery) {
+  async function finishQuestions(bravery: Bravery) {
     const final = { ...answers, bravery };
     setAnswers(final);
-    setRanked(rankRecords(final));
+    // Records someone at the party has already chosen are never offered again.
+    const taken = new Set((await listPicks().catch(() => [])).map((p) => p.record_id));
+    setRanked(rankRecords(final, taken));
     setIndex(0);
     setStep("drumroll");
+  }
+
+  async function choose() {
+    if (!record) return;
+    setChoosing(true);
+    setChooseError(false);
+    try {
+      const taken = new Set((await listPicks()).map((p) => p.record_id));
+      if (taken.has(record.id)) {
+        // Someone else grabbed it while this guest was deciding.
+        setRanked((list) => list.filter((r) => r.id !== record.id));
+        setChooseError(true);
+        return;
+      }
+      await addPick({ names: crewName(answers.name, answers.crew), record_id: record.id, record_title: record.title });
+      setStep("chosen");
+    } catch {
+      setChooseError(true);
+    } finally {
+      setChoosing(false);
+    }
   }
 
   function another() {
@@ -53,6 +81,8 @@ export default function App() {
   }
 
   function nextPerson() {
+    setChooseError(false);
+    setBookTitle("");
     setAnswers(emptyAnswers);
     setRanked([]);
     setIndex(0);
@@ -87,11 +117,13 @@ export default function App() {
 
         {step === "welcome" && (
           <section className="stack welcome">
-            <Trophy />
-            <p className="script">Happy birthday, {BIRTHDAY_NAME}</p>
+            <p className="script">Happy birthday</p>
+            <Suspense fallback={<div className="hero3d-fallback" />}>
+              <Hero3D />
+            </Suspense>
             <h1 className="display shine">Let's break some world records.</h1>
             <p className="lead">
-              Answer a few quick questions and we'll find you a record to try, right here, right now.
+              Answer a few quick questions and we'll find you a Guinness World Record to go for.
             </p>
             <button type="button" className="primary big" onClick={() => {
                 burst();
@@ -109,7 +141,7 @@ export default function App() {
         )}
 
         {step === "party" && (
-          <PartyRecords defaultName={answers.name} onExit={() => setStep("welcome")} />
+          <PartyRecords defaultName={answers.name.trim() ? crewName(answers.name, answers.crew) : ""} defaultTitle={bookTitle} onExit={() => setStep("welcome")} onPlay={() => setStep("game")} />
         )}
 
         {step === "game" && <BalloonGame defaultName={answers.name} onExit={() => setStep("welcome")} />}
@@ -251,36 +283,27 @@ export default function App() {
           <Reveal
             record={record}
             answers={answers}
-            onAttempt={() => {
-              claimRecord(record.id);
-              setStep("attempt");
-            }}
+            onChoose={choose}
+            choosing={choosing}
             onAnother={another}
             onNextPerson={nextPerson}
           />
         )}
 
-        {step === "attempt" && record && (
-          <Attempt
-            key={record.id}
-            record={record}
-            crewSize={1 + answers.crew.length}
-            onBack={() => setStep("reveal")}
-            onResult={(s) => {
-              setScore(s);
-              setStep("result");
-            }}
-          />
+        {step === "reveal" && chooseError && (
+          <p className="error">Someone just took that one, or the save failed. Tap "Show me another" or try again.</p>
         )}
 
-        {step === "result" && record && (
-          <Result
+        {step === "chosen" && record && (
+          <Chosen
             record={record}
-            name={crewName(answers.name, answers.crew)}
-            score={score}
-            onTryAgain={() => setStep("attempt")}
-            onAnother={another}
+            names={crewName(answers.name, answers.crew)}
+            onAddRequirements={() => {
+              setBookTitle(record.title);
+              setStep("party");
+            }}
             onNextPerson={nextPerson}
+            onPlay={() => setStep("game")}
           />
         )}
       </main>
