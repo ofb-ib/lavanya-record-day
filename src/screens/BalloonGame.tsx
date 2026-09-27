@@ -10,6 +10,7 @@ interface Balloon {
   colour: string;
   left: number;
   duration: number;
+  delay: number;
 }
 
 type Phase = "intro" | "countdown" | "playing" | "over";
@@ -71,20 +72,24 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   useEffect(() => {
     if (phase !== "playing") return;
     let spawnTimer = 0;
+    let first = true;
     const spawn = () => {
       const t = (performance.now() - startedAt.current) / 1000;
       const progress = Math.min(1, t / GAME_SECONDS);
-      const count = 1 + Math.floor(progress * 3);
+      // Open with a burst, then 3 per wave building to 6, arriving faster and faster.
+      const count = first ? 8 : 3 + Math.floor(progress * 3);
+      first = false;
       setBalloons((list) => [
-        ...list.slice(-40),
+        ...list.slice(-60),
         ...Array.from({ length: count }, () => ({
           id: nextId.current++,
           colour: COLOURS[Math.floor(Math.random() * COLOURS.length)],
           left: 4 + Math.random() * 84,
-          duration: 5.5 - progress * 3 + Math.random(),
+          duration: 4.6 - progress * 2.2 + Math.random() * 0.8,
+          delay: Math.random() * 0.4,
         })),
       ]);
-      spawnTimer = window.setTimeout(spawn, 700 - progress * 450);
+      spawnTimer = window.setTimeout(spawn, 450 - progress * 230);
     };
     spawn();
     const clock = window.setInterval(() => {
@@ -252,7 +257,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
               className="balloon game-balloon"
               onPointerDown={(e) => pop(b, e)}
               onAnimationEnd={() => setBalloons((list) => list.filter((x) => x.id !== b.id))}
-              style={{ left: `${b.left}%`, background: b.colour, animationDuration: `${b.duration}s` }}
+              style={{ left: `${b.left}%`, background: b.colour, animationDuration: `${b.duration}s`, animationDelay: `${b.delay}s` }}
             />
           ))}
         </div>
