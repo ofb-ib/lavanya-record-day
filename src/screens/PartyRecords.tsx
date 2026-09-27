@@ -61,7 +61,7 @@ export function PartyRecords({ onExit, onPlay }: Props) {
         <div className="play-cta">
           <p>While you wait: can you top the party leaderboard?</p>
           <button type="button" className="primary" onClick={onPlay}>
-            Play the balloon pop record
+            Go for the balloon pop record
           </button>
         </div>
       </section>
