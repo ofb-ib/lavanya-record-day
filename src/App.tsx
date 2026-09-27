@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { emptyAnswers, type Answers, type Bravery, type Format, type WorldRecord } from "./lib/types";
 import { BRAVERY_OPTIONS, FORMAT_OPTIONS, HOBBY_OPTIONS, QUIZ_OPTIONS, VIBE_OPTIONS } from "./lib/questions";
-import { rankRecords } from "./lib/match";
+import { claimRecord, rankRecords } from "./lib/match";
 import { BIRTHDAY_NAME, crewName } from "./lib/format";
 import { MultiChoice, SingleChoice } from "./screens/Choice";
 import { Drumroll } from "./screens/Drumroll";
@@ -237,7 +237,10 @@ export default function App() {
           <Reveal
             record={record}
             answers={answers}
-            onAttempt={() => setStep("attempt")}
+            onAttempt={() => {
+              claimRecord(record.id);
+              setStep("attempt");
+            }}
             onAnother={another}
             onNextPerson={nextPerson}
           />

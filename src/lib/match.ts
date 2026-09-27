@@ -38,10 +38,34 @@ function score(r: WorldRecord, a: Answers, tags: string[]): number {
   return s;
 }
 
+const CLAIMED_KEY = "lrd-claimed";
+
+function readClaimed(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(CLAIMED_KEY) ?? "[]") as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Marks a record as taken, so later guests are offered something else. */
+export function claimRecord(id: string): void {
+  const claimed = readClaimed();
+  claimed.add(id);
+  try {
+    localStorage.setItem(CLAIMED_KEY, JSON.stringify([...claimed]));
+  } catch {
+    // Private mode: nothing is remembered.
+  }
+}
+
 /** Records in play, best match first. Ties are shuffled once per call. */
 export function rankRecords(a: Answers): WorldRecord[] {
-  const byFormat = IN_PLAY.filter((r) => r.format === a.format);
-  const pool = byFormat.length ? byFormat : IN_PLAY;
+  const claimed = readClaimed();
+  const open = IN_PLAY.filter((r) => !claimed.has(r.id));
+  const available = open.length ? open : IN_PLAY;
+  const byFormat = available.filter((r) => r.format === a.format);
+  const pool = byFormat.length ? byFormat : available;
   const tags = trickTags(a.trick);
   return pool
     .map((r) => ({ r, s: score(r, a, tags), tie: Math.random() }))
