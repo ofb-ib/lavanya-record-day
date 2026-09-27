@@ -96,7 +96,7 @@ export async function addScore(entry: BalloonScore): Promise<void> {
   }
 }
 
-// ---------- Every balloon round played, for the attempts counter ----------
+// ---------- Every balloon round played (logged, not shown to guests) ----------
 
 const ATTEMPTS_TABLE = "balloon_attempts";
 const LOCAL_ATTEMPTS_KEY = "lrd-balloon-attempts";
@@ -117,15 +117,3 @@ export async function logAttempt(score: number, device: Device): Promise<void> {
   }
 }
 
-/** Total rounds played at the party, across every phone and laptop. */
-export async function countAttempts(): Promise<number> {
-  if (sharedDb) {
-    const res = await fetch(`${URL}/rest/v1/${ATTEMPTS_TABLE}?select=id`, {
-      method: "HEAD",
-      headers: { ...headers(), Prefer: "count=exact" },
-    });
-    const total = res.headers.get("content-range")?.split("/")[1];
-    return total && total !== "*" ? Number(total) : 0;
-  }
-  return Number(localStorage.getItem(LOCAL_ATTEMPTS_KEY) ?? 0);
-}

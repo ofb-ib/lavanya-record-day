@@ -297,5 +297,3 @@ body {
 .board-tabs { display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: var(--navy-2); border: 1.5px solid var(--gold); align-self: flex-start; }
 .board-tabs button { border: 0; border-radius: 999px; padding: 8px 16px; background: transparent; color: var(--ivory); font-weight: 700; }
 .board-tabs button.on { background: var(--gold); color: var(--navy); }
-.attempts { font-weight: 600; }
-.attempts strong { font-family: var(--serif); font-weight: 400; font-size: 1.6rem; color: var(--gold); font-variant-numeric: tabular-nums; }
