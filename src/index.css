@@ -265,3 +265,5 @@ body {
 .button-link { display: flex; align-items: center; justify-content: center; text-decoration: none; text-align: center; }
 .idea-title { font-size: 1.6rem !important; line-height: 1.2 !important; }
 .error { color: #ff9a9a; font-weight: 600; }
+.note { padding: 14px 16px; border-radius: 14px; border: 2px solid var(--gold); background: rgba(214,166,70,.12); line-height: 1.45; }
+.note strong { color: var(--gold); }

@@ -100,7 +100,7 @@ export default function App() {
               Find my record
             </button>
             <button type="button" className="secondary" onClick={() => setStep("party")}>
-              Invent your own record
+              Add your own record
             </button>
             <button type="button" className="secondary" onClick={() => setStep("game")}>
               Balloon pop challenge
