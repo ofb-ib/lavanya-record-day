@@ -32,6 +32,7 @@ export function Result({ record: r, name, score, onTryAgain, onAnother, onNextPe
           <p>
             {formatValue(r, score)} against {formatValue(r, r.recordValue!)}.
           </p>
+          {r.gwrUrl && (
           <p>
             Unofficially, for now. Guinness only counts attempts they have approved in advance. Film it, then
             apply to do it for real:{" "}
@@ -39,6 +40,7 @@ export function Result({ record: r, name, score, onTryAgain, onAnother, onNextPe
               {r.title}
             </a>
           </p>
+          )}
         </>
       ) : (
         <>

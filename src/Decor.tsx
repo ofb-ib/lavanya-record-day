@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import confetti from "canvas-confetti";
 import { popSound } from "./lib/device";
 
@@ -8,6 +8,7 @@ interface Balloon {
   id: number;
   colour: string;
   left: number;
+  side: 0 | 1;
   duration: number;
   delay: number;
 }
@@ -19,14 +20,36 @@ function makeBalloon(pops: number, delay: number): Balloon {
   return {
     id: nextId++,
     colour: BALLOON_COLOURS[Math.floor(Math.random() * BALLOON_COLOURS.length)],
-    left: 2 + Math.random() * 86,
+    left: Math.random(),
+    side: Math.random() < 0.5 ? 0 : 1,
     duration: Math.max(4.5, 14 - pops * 0.6) + Math.random() * 3,
     delay,
   };
 }
 
+const COLUMN = 520;
+const EDGE_CAP = 10;
+
+/** Where a balloon sits: anywhere on the welcome screen, only in the side margins during the questions. */
+function position(b: Balloon, edges: boolean, width: number): React.CSSProperties {
+  if (!edges) return { left: `${2 + b.left * 86}%` };
+  const gutter = (width - COLUMN) / 2;
+  if (gutter >= 80) {
+    const x = b.left * (gutter - 70);
+    return b.side ? { right: `${x}px` } : { left: `${x}px` };
+  }
+  // Phones have no margin, so balloons peek in from the very edge at a smaller size.
+  return { ...(b.side ? { right: "-26px" } : { left: "-26px" }), scale: "0.7" };
+}
+
 /** Balloons float up over the page. Every pop sends up more, faster, than the last. */
-export function Balloons() {
+export function Balloons({ edges = false }: { edges?: boolean }) {
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [balloons, setBalloons] = useState<Balloon[]>(() =>
     Array.from({ length: 5 }, (_, i) => makeBalloon(0, i * 2.8)),
   );
@@ -58,7 +81,7 @@ export function Balloons() {
 
   return (
     <div className="balloons">
-      {balloons.map((b) => (
+      {(edges ? balloons.slice(-EDGE_CAP) : balloons).map((b) => (
         <button
           key={b.id}
           type="button"
@@ -66,7 +89,7 @@ export function Balloons() {
           className="balloon"
           onPointerDown={(e) => pop(b, e)}
           style={{
-            left: `${b.left}%`,
+            ...position(b, edges, width),
             background: b.colour,
             animationDelay: `${b.delay}s`,
             animationDuration: `${b.duration}s`,

@@ -9,12 +9,14 @@ import { Reveal } from "./screens/Reveal";
 import { Attempt } from "./screens/Attempt";
 import { Result } from "./screens/Result";
 import { Crew } from "./screens/Crew";
+import { BalloonGame } from "./screens/BalloonGame";
+import { PartyRecords } from "./screens/PartyRecords";
 import { Balloons, Sky, Trophy } from "./Decor";
 import { burst } from "./lib/device";
 
 const ALL_QUESTIONS = ["name", "format", "crew", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
 type Question = (typeof ALL_QUESTIONS)[number];
-type Step = "welcome" | Question | "drumroll" | "reveal" | "attempt" | "result";
+type Step = "welcome" | Question | "drumroll" | "reveal" | "attempt" | "result" | "game" | "party";
 
 export default function App() {
   const [step, setStep] = useState<Step>("welcome");
@@ -97,8 +99,20 @@ export default function App() {
               }}>
               Find my record
             </button>
+            <button type="button" className="secondary" onClick={() => setStep("party")}>
+              Invent your own record
+            </button>
+            <button type="button" className="secondary" onClick={() => setStep("game")}>
+              Balloon pop challenge
+            </button>
           </section>
         )}
+
+        {step === "party" && (
+          <PartyRecords defaultName={answers.name} onExit={() => setStep("welcome")} />
+        )}
+
+        {step === "game" && <BalloonGame defaultName={answers.name} onExit={() => setStep("welcome")} />}
 
         {step === "name" && (
           <form
@@ -271,7 +285,7 @@ export default function App() {
         )}
       </main>
       <footer className="footer">Just for fun. Not affiliated with Guinness World Records.</footer>
-      <Balloons />
+      {step !== "game" && <Balloons edges={step !== "welcome"} />}
     </div>
   );
 }

@@ -241,3 +241,27 @@ body {
 .crew li { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 14px; border-radius: 999px; background: var(--navy-2); border: 1.5px solid var(--gold); font-weight: 600; }
 .crew li button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--gold); color: var(--navy); font-weight: 700; line-height: 1; }
 .cert-crew { font-size: 0.95rem; font-weight: 600; }
+
+/* Balloon pop challenge */
+.record-card { display: flex; flex-direction: column; gap: 2px; padding: 18px; border-radius: 16px; border: 2px solid var(--gold); background: var(--navy-2); text-align: center; }
+.record-card strong { font-family: var(--serif); font-weight: 400; font-size: 2.6rem; color: var(--gold); line-height: 1.1; }
+.game-count { margin-top: 20vh; font-size: 8rem; animation: popIn .4s cubic-bezier(.2,1.6,.4,1) both; }
+.hud { position: fixed; top: 0; left: 0; right: 0; z-index: 7; display: flex; justify-content: space-between; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; background: rgba(16,27,63,.85); backdrop-filter: blur(6px); font-size: 1rem; }
+.hud strong { font-family: var(--serif); font-weight: 400; font-size: 1.8rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+.hud .hurry strong { color: #ff8a8a; animation: pulse .4s ease-in-out infinite alternate; }
+.game-sky { position: fixed; inset: 0; z-index: 6; overflow: hidden; }
+.game-balloon { width: 64px; height: 78px; animation-name: rise-once; animation-iteration-count: 1; animation-timing-function: linear; }
+@keyframes rise-once { from { transform: translateY(0); } to { transform: translateY(-125vh) rotate(6deg); } }
+.play-link { align-self: center; }
+
+/* Party records */
+.invent { padding: 18px; border-radius: 18px; border: 2px dashed var(--gold); background: rgba(24,38,87,.6); }
+.board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.board li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 16px; border-radius: 14px; background: var(--navy-2); border: 1.5px solid var(--gold); animation: popIn .4s cubic-bezier(.2,1.4,.4,1) both; }
+.board-title { font-family: var(--serif); font-size: 1.15rem; line-height: 1.2; }
+.board .add { min-height: 48px; flex: none; }
+.field textarea { font: inherit; font-size: 1.05rem; padding: 14px 16px; border-radius: 12px; border: 2px solid var(--ivory); background: var(--ivory); color: var(--navy); resize: vertical; }
+.field textarea::placeholder { color: var(--gold-deep); }
+.button-link { display: flex; align-items: center; justify-content: center; text-decoration: none; text-align: center; }
+.idea-title { font-size: 1.6rem !important; line-height: 1.2 !important; }
+.error { color: #ff9a9a; font-weight: 600; }
