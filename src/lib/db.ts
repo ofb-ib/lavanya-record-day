@@ -95,3 +95,37 @@ export async function addScore(entry: BalloonScore): Promise<void> {
     // Private mode: nothing is remembered.
   }
 }
+
+// ---------- Every balloon round played, for the attempts counter ----------
+
+const ATTEMPTS_TABLE = "balloon_attempts";
+const LOCAL_ATTEMPTS_KEY = "lrd-balloon-attempts";
+
+export async function logAttempt(score: number, device: Device): Promise<void> {
+  if (sharedDb) {
+    await fetch(`${URL}/rest/v1/${ATTEMPTS_TABLE}`, {
+      method: "POST",
+      headers: { ...headers(), Prefer: "return=minimal" },
+      body: JSON.stringify({ score, device }),
+    });
+    return;
+  }
+  try {
+    localStorage.setItem(LOCAL_ATTEMPTS_KEY, String(Number(localStorage.getItem(LOCAL_ATTEMPTS_KEY) ?? 0) + 1));
+  } catch {
+    // Private mode: the counter just doesn't move.
+  }
+}
+
+/** Total rounds played at the party, across every phone and laptop. */
+export async function countAttempts(): Promise<number> {
+  if (sharedDb) {
+    const res = await fetch(`${URL}/rest/v1/${ATTEMPTS_TABLE}?select=id`, {
+      method: "HEAD",
+      headers: { ...headers(), Prefer: "count=exact" },
+    });
+    const total = res.headers.get("content-range")?.split("/")[1];
+    return total && total !== "*" ? Number(total) : 0;
+  }
+  return Number(localStorage.getItem(LOCAL_ATTEMPTS_KEY) ?? 0);
+}

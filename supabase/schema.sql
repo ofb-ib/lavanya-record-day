@@ -42,3 +42,16 @@ alter table public.record_picks enable row level security;
 
 create policy "guests can add picks" on public.record_picks for insert to anon with check (true);
 create policy "guests can read picks" on public.record_picks for select to anon using (true);
+
+-- Every balloon round played, for the attempts counter.
+create table if not exists public.balloon_attempts (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  score int not null check (score between 0 and 500),
+  device text check (device in ('mobile', 'laptop'))
+);
+
+alter table public.balloon_attempts enable row level security;
+
+create policy "guests can log attempts" on public.balloon_attempts for insert to anon with check (true);
+create policy "guests can read attempts" on public.balloon_attempts for select to anon using (true);

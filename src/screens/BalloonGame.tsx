@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { beep, burst, keepAwake, popSound } from "../lib/device";
-import { addScore, topScores, THIS_DEVICE, type BalloonScore, type Device } from "../lib/db";
+import { addScore, countAttempts, logAttempt, topScores, THIS_DEVICE, type BalloonScore, type Device } from "../lib/db";
 
 const GAME_SECONDS = 30;
 const COLOURS = ["#D6A646", "#C94F6D", "#4F7BD6", "#F7F1E3", "#8E5BC9"];
@@ -36,7 +36,9 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   const [saving, setSaving] = useState(false);
 
   const [saveError, setSaveError] = useState(false);
+  const [attempts, setAttempts] = useState<number | null>(null);
   const refresh = () => {
+    countAttempts().then(setAttempts).catch(() => undefined);
     topScores(THIS_DEVICE).then(setTop).catch(() => undefined);
     if (viewing !== THIS_DEVICE) topScores(viewing).then(setViewTop).catch(() => undefined);
   };
@@ -49,6 +51,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   }, [phase, viewing]);
   const nextId = useRef(0);
   const startedAt = useRef(0);
+  const scoreRef = useRef(0);
 
   const best = top[0] ?? null;
   // Top three if there's a free spot, or it beats third place.
@@ -102,6 +105,8 @@ export function BalloonGame({ defaultName, onExit }: Props) {
       const remaining = GAME_SECONDS - (performance.now() - startedAt.current) / 1000;
       if (remaining <= 0) {
         beep(true);
+        // Every round counts towards the party total, whatever the score.
+        logAttempt(scoreRef.current, THIS_DEVICE).then(refresh).catch(() => undefined);
         setLeft(0);
         setBalloons([]);
         setPhase("over");
@@ -135,7 +140,8 @@ export function BalloonGame({ defaultName, onExit }: Props) {
       origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
       colors: [b.colour, "#F7F1E3"],
     });
-    setScore((s) => s + 1);
+    scoreRef.current += 1;
+    setScore(scoreRef.current);
     setBalloons((list) => list.filter((x) => x.id !== b.id));
   }
 
@@ -155,6 +161,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
 
   function start() {
     refresh();
+    scoreRef.current = 0;
     setScore(0);
     setLeft(GAME_SECONDS);
     setCountdown(3);
@@ -163,8 +170,15 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   }
 
   const shown = viewing === THIS_DEVICE ? top : viewTop;
+  const counter = attempts !== null && attempts > 0 && (
+    <p className="attempts">
+      <strong>{attempts.toLocaleString("en-GB")}</strong> {attempts === 1 ? "round" : "rounds"} played at the party so far
+    </p>
+  );
+
   const podium = (
     <>
+      {counter}
       <div className="board-tabs" role="tablist" aria-label="Leaderboard">
         {(["mobile", "laptop"] as Device[]).map((d) => (
           <button key={d} type="button" role="tab" aria-selected={viewing === d} className={viewing === d ? "on" : ""} onClick={() => setViewing(d)}>
