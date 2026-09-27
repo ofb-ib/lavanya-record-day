@@ -20,7 +20,8 @@ create table if not exists public.balloon_scores (
   id bigint generated always as identity primary key,
   created_at timestamptz not null default now(),
   name text not null check (char_length(name) between 1 and 40),
-  score int not null check (score between 1 and 500)
+  score int not null check (score between 1 and 500),
+  device text check (device in ('mobile', 'laptop'))
 );
 
 alter table public.balloon_scores enable row level security;

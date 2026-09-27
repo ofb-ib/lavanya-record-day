@@ -2,17 +2,6 @@ import type { WorldRecord } from "./types";
 
 export const BIRTHDAY_NAME = "Lavanya";
 
-export function displayName(name: string): string {
-  return name.trim() || "Mystery guest";
-}
-
-/** "Priya", "Priya and Sam", or "Priya, Sam and Leo". */
-export function crewName(name: string, crew: string[]): string {
-  const all = [displayName(name), ...crew.map((c) => c.trim()).filter(Boolean)];
-  if (all.length === 1) return all[0];
-  return `${all.slice(0, -1).join(", ")} and ${all[all.length - 1]}`;
-}
-
 function tidy(n: number): string {
   return String(Math.round(n * 100) / 100);
 }

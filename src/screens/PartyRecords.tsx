@@ -1,27 +1,20 @@
-import { useEffect, useState } from "react";
-import { addRecord, listRecords, type AddedRecord } from "../lib/db";
+import { useState } from "react";
+import { addRecord } from "../lib/db";
 import { burst } from "../lib/device";
 
 const GWR_APPLY_URL = "https://www.guinnessworldrecords.com/records/apply-to-set-or-break-a-record";
 
 interface Props {
-  defaultName: string;
-  defaultTitle?: string;
   onExit: () => void;
   onPlay: () => void;
 }
 
 /** Guests add the record they are attempting, with the requirements Guinness sent them. */
-export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }: Props) {
-  const [name, setName] = useState(defaultName);
-  const [title, setTitle] = useState(defaultTitle);
+export function PartyRecords({ onExit, onPlay }: Props) {
+  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [requirements, setRequirements] = useState("");
   const [status, setStatus] = useState<"editing" | "saving" | "saved" | "error">("editing");
-  const [entries, setEntries] = useState<AddedRecord[]>([]);
-
-  useEffect(() => {
-    listRecords().then(setEntries).catch(() => setEntries([]));
-  }, [status]);
 
   const ready = name.trim().length > 0 && title.trim().length > 3;
 
@@ -39,7 +32,7 @@ export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }:
   if (status === "saved") {
     return (
       <section className="stack">
-        <h1 className="win">Added to the party book, {name.trim()}!</h1>
+        <h1 className="win">Your record attempt is saved!</h1>
         <div className="record-card">
           <span>Your record</span>
           <strong className="idea-title">{title.trim()}</strong>
@@ -58,7 +51,7 @@ export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }:
               setStatus("editing");
             }}
           >
-            Add another record
+            Add another attempt
           </button>
           <button type="button" className="secondary" onClick={onExit}>
             Back to the start
@@ -80,7 +73,7 @@ export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }:
       <button type="button" className="link" onClick={onExit}>
         Back to the start
       </button>
-      <h1 className="display shine">Add your own record</h1>
+      <h1 className="display shine">Add your record attempt</h1>
 
       <aside className="note">
         <strong>Note:</strong> if you're not attempting an existing record, you'll need to propose a new record title
@@ -95,8 +88,8 @@ export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }:
         }}
       >
         <label className="field">
-          <span>Your name</span>
-          <input id="added-name" autoComplete="off" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          <span>Name(s)</span>
+          <input id="added-name" autoComplete="off" maxLength={200} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Priya, or Priya and Sam" />
         </label>
         <label className="field">
           <span>The record you're attempting</span>
@@ -126,21 +119,6 @@ export function PartyRecords({ defaultName, defaultTitle = "", onExit, onPlay }:
         </button>
       </form>
 
-      {entries.length > 0 && (
-        <div className="stack">
-          <h2>The party book</h2>
-          <ul className="board">
-            {entries.map((e) => (
-              <li key={e.id ?? `${e.title}-${e.created_at}`}>
-                <div>
-                  <p className="board-title">{e.title}</p>
-                  <p>by {e.guest_name}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }

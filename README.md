@@ -10,7 +10,7 @@ Edit `src/data/kit.ts`. A record is only offered if every item it needs is in th
 
 ## Party book database
 
-Guests add the record they are attempting and paste the requirements Guinness sent them. Entries are stored in a Supabase table so every phone shares one book.
+Guests add their record attempt (names, record title, and the requirements Guinness emails them). Entries are stored in a Supabase table so every phone shares one book.
 
 1. Create a free project at supabase.com.
 2. Run `supabase/schema.sql` in its SQL editor.

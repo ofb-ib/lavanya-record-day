@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { beep, burst, keepAwake, popSound } from "../lib/device";
-import { addScore, topScores, type BalloonScore } from "../lib/db";
+import { addScore, topScores, THIS_DEVICE, type BalloonScore, type Device } from "../lib/db";
 
 const GAME_SECONDS = 30;
 const COLOURS = ["#D6A646", "#C94F6D", "#4F7BD6", "#F7F1E3", "#8E5BC9"];
@@ -27,20 +27,26 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   const [score, setScore] = useState(0);
   const [left, setLeft] = useState(GAME_SECONDS);
   const [balloons, setBalloons] = useState<Balloon[]>([]);
+  // The board you compete on is your device's. You can peek at the other one.
   const [top, setTop] = useState<BalloonScore[]>([]);
+  const [viewing, setViewing] = useState<Device>(THIS_DEVICE);
+  const [viewTop, setViewTop] = useState<BalloonScore[]>([]);
   const [name, setName] = useState(defaultName);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [saveError, setSaveError] = useState(false);
-  const refresh = () => topScores(3).then(setTop).catch(() => undefined);
+  const refresh = () => {
+    topScores(THIS_DEVICE).then(setTop).catch(() => undefined);
+    if (viewing !== THIS_DEVICE) topScores(viewing).then(setViewTop).catch(() => undefined);
+  };
   // Keep the podium live: other guests' scores appear within a few seconds.
   useEffect(() => {
     refresh();
     if (phase === "countdown" || phase === "playing") return;
     const id = window.setInterval(refresh, 4000);
     return () => window.clearInterval(id);
-  }, [phase]);
+  }, [phase, viewing]);
   const nextId = useRef(0);
   const startedAt = useRef(0);
 
@@ -137,7 +143,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
     setSaving(true);
     setSaveError(false);
     try {
-      await addScore({ score, name: name.trim() });
+      await addScore({ score, name: name.trim(), device: THIS_DEVICE });
       await refresh();
       setSaved(true);
     } catch {
@@ -156,16 +162,27 @@ export function BalloonGame({ defaultName, onExit }: Props) {
     setPhase("countdown");
   }
 
+  const shown = viewing === THIS_DEVICE ? top : viewTop;
   const podium = (
-    <ol className="podium">
-      {[0, 1, 2].map((i) => (
-        <li key={i} className={`place-${i + 1}`}>
-          <span className="medal">{i + 1}</span>
-          <span className="podium-name">{top[i]?.name ?? "Up for grabs"}</span>
-          <strong>{top[i] ? `${top[i].score}` : ""}</strong>
-        </li>
-      ))}
-    </ol>
+    <>
+      <div className="board-tabs" role="tablist" aria-label="Leaderboard">
+        {(["mobile", "laptop"] as Device[]).map((d) => (
+          <button key={d} type="button" role="tab" aria-selected={viewing === d} className={viewing === d ? "on" : ""} onClick={() => setViewing(d)}>
+            {d === "mobile" ? "Phone" : "Laptop"}
+            {d === THIS_DEVICE && " (you)"}
+          </button>
+        ))}
+      </div>
+      <ol className="podium">
+        {[0, 1, 2].map((i) => (
+          <li key={i} className={`place-${i + 1}`}>
+            <span className="medal">{i + 1}</span>
+            <span className="podium-name">{shown[i]?.name ?? "Up for grabs"}</span>
+            <strong>{shown[i] ? `${shown[i].score}` : ""}</strong>
+          </li>
+        ))}
+      </ol>
+    </>
   );
 
   return (
@@ -178,7 +195,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
         <>
           <h1 className="display shine">Balloon pop challenge</h1>
           <p className="lead">Pop as many balloons as you can in {GAME_SECONDS} seconds. They get faster as the clock runs down.</p>
-          <h2>Top three</h2>
+          <h2>Top three on {THIS_DEVICE === "mobile" ? "phones" : "laptops"}</h2>
           {podium}
           <button type="button" className="primary big" onClick={start}>
             Start
@@ -232,7 +249,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
           )}
           {(saved || !madeTop3) && (
             <>
-              <h2>Top three</h2>
+              <h2>Top three on {THIS_DEVICE === "mobile" ? "phones" : "laptops"}</h2>
               {podium}
               <div className="actions">
                 <button type="button" className="primary" onClick={start}>

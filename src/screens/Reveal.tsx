@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Answers, WorldRecord } from "../lib/types";
 import { matchedReasons } from "../lib/match";
-import { DIFFICULTY_WORDS, crewName, formatNumber, holderLine, kitLabel, teamLine, unitWord } from "../lib/format";
+import { DIFFICULTY_WORDS, formatNumber, holderLine, kitLabel, teamLine, unitWord } from "../lib/format";
 import { burst } from "../lib/device";
 import { Seal } from "../Decor";
 
@@ -9,12 +9,11 @@ interface Props {
   record: WorldRecord;
   answers: Answers;
   onChoose: () => void;
-  choosing: boolean;
   onAnother: () => void;
   onNextPerson: () => void;
 }
 
-export function Reveal({ record: r, answers, onChoose, choosing, onAnother, onNextPerson }: Props) {
+export function Reveal({ record: r, answers, onChoose, onAnother, onNextPerson }: Props) {
   useEffect(() => burst(), [r.id]);
   const team = teamLine(r);
 
@@ -22,9 +21,7 @@ export function Reveal({ record: r, answers, onChoose, choosing, onAnother, onNe
     <section className="stack">
       <div className="certificate">
         <Seal />
-        <p className="cert-small">This is to announce that</p>
-        <p className="cert-name">{crewName(answers.name, answers.crew)}</p>
-        <p className="cert-small">will attempt</p>
+        <p className="cert-name">Your record</p>
         <h1 className="cert-title">{r.title}</h1>
         {team && <p className="cert-small">{team}</p>}
         <p className="cert-small">The record to beat</p>
@@ -55,8 +52,8 @@ export function Reveal({ record: r, answers, onChoose, choosing, onAnother, onNe
       </div>
 
       <div className="actions">
-        <button type="button" className="primary" onClick={onChoose} disabled={choosing}>
-          {choosing ? "Saving..." : "This is the one"}
+        <button type="button" className="primary" onClick={onChoose}>
+          This is the one
         </button>
         <button type="button" className="secondary" onClick={onAnother}>
           Show me another

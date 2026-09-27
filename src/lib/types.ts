@@ -26,9 +26,7 @@ export interface WorldRecord {
 }
 
 export interface Answers {
-  name: string;
   format: Format | null;
-  crew: string[];
   vibe: string | null;
   quiz: string | null;
   hobbies: string[];
@@ -37,9 +35,7 @@ export interface Answers {
 }
 
 export const emptyAnswers: Answers = {
-  name: "",
   format: null,
-  crew: [],
   vibe: null,
   quiz: null,
   hobbies: [],

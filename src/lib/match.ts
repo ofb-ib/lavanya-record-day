@@ -23,13 +23,6 @@ function score(r: WorldRecord, a: Answers, tags: string[]): number {
   if (a.quiz && r.talents.includes(a.quiz)) s += 2;
   s += 2 * Math.min(2, a.hobbies.filter((h) => r.talents.includes(h)).length);
   s += 2 * Math.min(2, tags.filter((t) => r.talents.includes(t)).length);
-  // Teams: prefer records sized for the crew that's actually here.
-  if (a.format === "team") {
-    const size = 1 + a.crew.length;
-    if (r.teamSize === null || r.teamSize === size) s += 3;
-    else if (r.teamSize > size) s -= Math.min(4, r.teamSize - size);
-    else s -= 1;
-  }
   if (a.bravery) {
     const [lo, hi] = BANDS[a.bravery];
     const d = r.difficulty;
@@ -39,9 +32,8 @@ function score(r: WorldRecord, a: Answers, tags: string[]): number {
 }
 
 /** Records in play, best match first. Ties are shuffled once per call. */
-export function rankRecords(a: Answers, taken: Set<string>): WorldRecord[] {
-  const open = IN_PLAY.filter((r) => !taken.has(r.id));
-  const available = open.length ? open : IN_PLAY;
+export function rankRecords(a: Answers): WorldRecord[] {
+  const available = IN_PLAY;
   const byFormat = available.filter((r) => r.format === a.format);
   const pool = byFormat.length ? byFormat : available;
   const tags = trickTags(a.trick);

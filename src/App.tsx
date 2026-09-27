@@ -2,13 +2,10 @@ import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 import { emptyAnswers, type Answers, type Bravery, type Format, type WorldRecord } from "./lib/types";
 import { BRAVERY_OPTIONS, FORMAT_OPTIONS, HOBBY_OPTIONS, QUIZ_OPTIONS, VIBE_OPTIONS } from "./lib/questions";
 import { rankRecords } from "./lib/match";
-import { addPick, listPicks } from "./lib/db";
-import { crewName } from "./lib/format";
 import { MultiChoice, SingleChoice } from "./screens/Choice";
 import { Drumroll } from "./screens/Drumroll";
 import { Reveal } from "./screens/Reveal";
 import { Chosen } from "./screens/Chosen";
-import { Crew } from "./screens/Crew";
 import { BalloonGame } from "./screens/BalloonGame";
 import { PartyRecords } from "./screens/PartyRecords";
 import { Balloons, Sky } from "./Decor";
@@ -17,8 +14,8 @@ import { burst } from "./lib/device";
 
 const Hero3D = lazy(() => import("./Hero3D"));
 
-const ALL_QUESTIONS = ["name", "format", "crew", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
-type Question = (typeof ALL_QUESTIONS)[number];
+const QUESTIONS = ["format", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
+type Question = (typeof QUESTIONS)[number];
 type Step = "welcome" | Question | "drumroll" | "reveal" | "chosen" | "game" | "party";
 
 export default function App() {
@@ -26,14 +23,9 @@ export default function App() {
   const [answers, setAnswers] = useState<Answers>(emptyAnswers);
   const [ranked, setRanked] = useState<WorldRecord[]>([]);
   const [index, setIndex] = useState(0);
-  const [choosing, setChoosing] = useState(false);
-  const [chooseError, setChooseError] = useState(false);
-  const [bookTitle, setBookTitle] = useState("");
 
   const record = ranked[index];
   const set = (patch: Partial<Answers>) => setAnswers((a) => ({ ...a, ...patch }));
-  // Solo guests skip the crew step.
-  const QUESTIONS = ALL_QUESTIONS.filter((q) => q !== "crew" || (answers.format !== null && answers.format !== "solo"));
   const qIndex = QUESTIONS.indexOf(step as Question);
 
   function next() {
@@ -44,35 +36,12 @@ export default function App() {
     setStep(qIndex > 0 ? QUESTIONS[qIndex - 1] : "welcome");
   }
 
-  async function finishQuestions(bravery: Bravery) {
+  function finishQuestions(bravery: Bravery) {
     const final = { ...answers, bravery };
     setAnswers(final);
-    // Records someone at the party has already chosen are never offered again.
-    const taken = new Set((await listPicks().catch(() => [])).map((p) => p.record_id));
-    setRanked(rankRecords(final, taken));
+    setRanked(rankRecords(final));
     setIndex(0);
     setStep("drumroll");
-  }
-
-  async function choose() {
-    if (!record) return;
-    setChoosing(true);
-    setChooseError(false);
-    try {
-      const taken = new Set((await listPicks()).map((p) => p.record_id));
-      if (taken.has(record.id)) {
-        // Someone else grabbed it while this guest was deciding.
-        setRanked((list) => list.filter((r) => r.id !== record.id));
-        setChooseError(true);
-        return;
-      }
-      await addPick({ names: crewName(answers.name, answers.crew), record_id: record.id, record_title: record.title });
-      setStep("chosen");
-    } catch {
-      setChooseError(true);
-    } finally {
-      setChoosing(false);
-    }
   }
 
   function another() {
@@ -81,8 +50,6 @@ export default function App() {
   }
 
   function nextPerson() {
-    setChooseError(false);
-    setBookTitle("");
     setAnswers(emptyAnswers);
     setRanked([]);
     setIndex(0);
@@ -127,12 +94,12 @@ export default function App() {
             </p>
             <button type="button" className="primary big" onClick={() => {
                 burst();
-                setStep("name");
+                setStep("format");
               }}>
               Find my record
             </button>
             <button type="button" className="secondary" onClick={() => setStep("party")}>
-              Add your own record
+              Add your record attempt
             </button>
             <button type="button" className="secondary" onClick={() => setStep("game")}>
               Balloon pop challenge
@@ -141,36 +108,10 @@ export default function App() {
         )}
 
         {step === "party" && (
-          <PartyRecords defaultName={answers.name.trim() ? crewName(answers.name, answers.crew) : ""} defaultTitle={bookTitle} onExit={() => setStep("welcome")} onPlay={() => setStep("game")} />
+          <PartyRecords onExit={() => setStep("welcome")} onPlay={() => setStep("game")} />
         )}
 
-        {step === "game" && <BalloonGame defaultName={answers.name} onExit={() => setStep("welcome")} />}
-
-        {step === "name" && (
-          <form
-            className="stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              next();
-            }}
-          >
-            <h1>What's your name?</h1>
-            <label className="field">
-              <span>Name</span>
-              <input
-                id="name"
-                autoComplete="off"
-                maxLength={40}
-                value={answers.name}
-                onChange={(e) => set({ name: e.target.value })}
-                placeholder="Your name"
-              />
-            </label>
-            <button type="submit" className="primary">
-              Next
-            </button>
-          </form>
-        )}
+        {step === "game" && <BalloonGame defaultName="" onExit={() => setStep("welcome")} />}
 
         {step === "format" && (
           <SingleChoice
@@ -178,18 +119,9 @@ export default function App() {
             options={FORMAT_OPTIONS}
             value={answers.format}
             onPick={(v) => {
-              set({ format: v as Format, crew: v === answers.format ? answers.crew : [] });
-              setStep(v === "solo" ? "vibe" : "crew");
+              set({ format: v as Format });
+              next();
             }}
-          />
-        )}
-
-        {step === "crew" && (
-          <Crew
-            pair={answers.format === "pair"}
-            crew={answers.crew}
-            onChange={(crew) => set({ crew })}
-            onNext={next}
           />
         )}
 
@@ -283,28 +215,14 @@ export default function App() {
           <Reveal
             record={record}
             answers={answers}
-            onChoose={choose}
-            choosing={choosing}
+            onChoose={() => setStep("chosen")}
             onAnother={another}
             onNextPerson={nextPerson}
           />
         )}
 
-        {step === "reveal" && chooseError && (
-          <p className="error">Someone just took that one, or the save failed. Tap "Show me another" or try again.</p>
-        )}
-
         {step === "chosen" && record && (
-          <Chosen
-            record={record}
-            names={crewName(answers.name, answers.crew)}
-            onAddRequirements={() => {
-              setBookTitle(record.title);
-              setStep("party");
-            }}
-            onNextPerson={nextPerson}
-            onPlay={() => setStep("game")}
-          />
+          <Chosen record={record} onNextPerson={nextPerson} onPlay={() => setStep("game")} />
         )}
       </main>
       {step !== "game" && <Balloons edges={step !== "welcome"} />}

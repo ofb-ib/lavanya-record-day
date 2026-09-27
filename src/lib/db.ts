@@ -43,23 +43,18 @@ export async function addRecord(entry: AddedRecord): Promise<void> {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
 }
 
-export async function listRecords(): Promise<AddedRecord[]> {
-  if (sharedDb) {
-    const res = await fetch(`${URL}/rest/v1/${TABLE}?select=id,created_at,guest_name,title&order=created_at.desc&limit=100`, {
-      headers: headers(),
-    });
-    if (!res.ok) throw new Error(`Load failed (${res.status})`);
-    return (await res.json()) as AddedRecord[];
-  }
-  return readLocal();
-}
-
 // ---------- Balloon pop challenge leaderboard ----------
+
+export type Device = "mobile" | "laptop";
+
+/** Touch screens get the phone board; mouse and trackpad get the laptop board. */
+export const THIS_DEVICE: Device = window.matchMedia("(pointer: coarse)").matches ? "mobile" : "laptop";
 
 export interface BalloonScore {
   id?: number;
   name: string;
   score: number;
+  device: Device;
 }
 
 const SCORES_TABLE = "balloon_scores";
@@ -73,15 +68,15 @@ function readLocalScores(): BalloonScore[] {
   }
 }
 
-export async function topScores(limit = 3): Promise<BalloonScore[]> {
+export async function topScores(device: Device, limit = 3): Promise<BalloonScore[]> {
   if (sharedDb) {
-    const res = await fetch(`${URL}/rest/v1/${SCORES_TABLE}?select=id,name,score&order=score.desc,created_at.asc&limit=${limit}`, {
+    const res = await fetch(`${URL}/rest/v1/${SCORES_TABLE}?select=id,name,score,device&device=eq.${device}&order=score.desc,created_at.asc&limit=${limit}`, {
       headers: headers(),
     });
     if (!res.ok) throw new Error(`Load failed (${res.status})`);
     return (await res.json()) as BalloonScore[];
   }
-  return readLocalScores().sort((a, b) => b.score - a.score).slice(0, limit);
+  return readLocalScores().filter((x) => x.device === device).sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
 export async function addScore(entry: BalloonScore): Promise<void> {
@@ -96,54 +91,6 @@ export async function addScore(entry: BalloonScore): Promise<void> {
   }
   try {
     localStorage.setItem(LOCAL_SCORES_KEY, JSON.stringify([...readLocalScores(), entry]));
-  } catch {
-    // Private mode: nothing is remembered.
-  }
-}
-
-// ---------- Chosen Guinness records ----------
-// One row per guest (or crew) who commits to a record, so no one else is offered it.
-
-export interface RecordPick {
-  id?: number;
-  created_at?: string;
-  names: string;
-  record_id: string;
-  record_title: string;
-}
-
-const PICKS_TABLE = "record_picks";
-const LOCAL_PICKS_KEY = "lrd-record-picks";
-
-function readLocalPicks(): RecordPick[] {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_PICKS_KEY) ?? "[]") as RecordPick[];
-  } catch {
-    return [];
-  }
-}
-
-export async function listPicks(): Promise<RecordPick[]> {
-  if (sharedDb) {
-    const res = await fetch(`${URL}/rest/v1/${PICKS_TABLE}?select=names,record_id,record_title&limit=1000`, { headers: headers() });
-    if (!res.ok) throw new Error(`Load failed (${res.status})`);
-    return (await res.json()) as RecordPick[];
-  }
-  return readLocalPicks();
-}
-
-export async function addPick(pick: RecordPick): Promise<void> {
-  if (sharedDb) {
-    const res = await fetch(`${URL}/rest/v1/${PICKS_TABLE}`, {
-      method: "POST",
-      headers: { ...headers(), Prefer: "return=minimal" },
-      body: JSON.stringify(pick),
-    });
-    if (!res.ok) throw new Error(`Save failed (${res.status})`);
-    return;
-  }
-  try {
-    localStorage.setItem(LOCAL_PICKS_KEY, JSON.stringify([...readLocalPicks(), pick]));
   } catch {
     // Private mode: nothing is remembered.
   }
