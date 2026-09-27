@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Answers, WorldRecord } from "../lib/types";
 import { matchedReasons } from "../lib/match";
-import { DIFFICULTY_WORDS, displayName, formatNumber, holderLine, kitLabel, teamLine, unitWord } from "../lib/format";
+import { DIFFICULTY_WORDS, crewName, formatNumber, holderLine, kitLabel, teamLine, unitWord } from "../lib/format";
 import { burst } from "../lib/device";
 import { Seal } from "../Decor";
 
@@ -22,7 +22,7 @@ export function Reveal({ record: r, answers, onAttempt, onAnother, onNextPerson 
       <div className="certificate">
         <Seal />
         <p className="cert-small">This is to announce that</p>
-        <p className="cert-name">{displayName(answers.name)}</p>
+        <p className="cert-name">{crewName(answers.name, answers.crew)}</p>
         <p className="cert-small">will attempt</p>
         <h1 className="cert-title">{r.title}</h1>
         {team && <p className="cert-small">{team}</p>}

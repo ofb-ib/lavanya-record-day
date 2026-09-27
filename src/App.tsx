@@ -2,17 +2,18 @@ import { useCallback, useMemo, useState } from "react";
 import { emptyAnswers, type Answers, type Bravery, type Format, type WorldRecord } from "./lib/types";
 import { BRAVERY_OPTIONS, FORMAT_OPTIONS, HOBBY_OPTIONS, QUIZ_OPTIONS, VIBE_OPTIONS } from "./lib/questions";
 import { rankRecords } from "./lib/match";
-import { BIRTHDAY_NAME, displayName } from "./lib/format";
+import { BIRTHDAY_NAME, crewName } from "./lib/format";
 import { MultiChoice, SingleChoice } from "./screens/Choice";
 import { Drumroll } from "./screens/Drumroll";
 import { Reveal } from "./screens/Reveal";
 import { Attempt } from "./screens/Attempt";
 import { Result } from "./screens/Result";
-import { Sky, Trophy } from "./Decor";
+import { Crew } from "./screens/Crew";
+import { Balloons, Sky, Trophy } from "./Decor";
 import { burst } from "./lib/device";
 
-const QUESTIONS = ["name", "format", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
-type Question = (typeof QUESTIONS)[number];
+const ALL_QUESTIONS = ["name", "format", "crew", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
+type Question = (typeof ALL_QUESTIONS)[number];
 type Step = "welcome" | Question | "drumroll" | "reveal" | "attempt" | "result";
 
 export default function App() {
@@ -24,6 +25,8 @@ export default function App() {
 
   const record = ranked[index];
   const set = (patch: Partial<Answers>) => setAnswers((a) => ({ ...a, ...patch }));
+  // Solo guests skip the crew step.
+  const QUESTIONS = ALL_QUESTIONS.filter((q) => q !== "crew" || (answers.format !== null && answers.format !== "solo"));
   const qIndex = QUESTIONS.indexOf(step as Question);
 
   function next() {
@@ -114,7 +117,7 @@ export default function App() {
                 maxLength={40}
                 value={answers.name}
                 onChange={(e) => set({ name: e.target.value })}
-                placeholder="Your name, or your team's name"
+                placeholder="Your name"
               />
             </label>
             <button type="submit" className="primary">
@@ -129,9 +132,18 @@ export default function App() {
             options={FORMAT_OPTIONS}
             value={answers.format}
             onPick={(v) => {
-              set({ format: v as Format });
-              next();
+              set({ format: v as Format, crew: v === answers.format ? answers.crew : [] });
+              setStep(v === "solo" ? "vibe" : "crew");
             }}
+          />
+        )}
+
+        {step === "crew" && (
+          <Crew
+            pair={answers.format === "pair"}
+            crew={answers.crew}
+            onChange={(crew) => set({ crew })}
+            onNext={next}
           />
         )}
 
@@ -235,6 +247,7 @@ export default function App() {
           <Attempt
             key={record.id}
             record={record}
+            crewSize={1 + answers.crew.length}
             onBack={() => setStep("reveal")}
             onResult={(s) => {
               setScore(s);
@@ -246,7 +259,7 @@ export default function App() {
         {step === "result" && record && (
           <Result
             record={record}
-            name={displayName(answers.name)}
+            name={crewName(answers.name, answers.crew)}
             score={score}
             onTryAgain={() => setStep("attempt")}
             onAnother={another}
@@ -255,6 +268,7 @@ export default function App() {
         )}
       </main>
       <footer className="footer">Just for fun. Not affiliated with Guinness World Records.</footer>
+      <Balloons />
     </div>
   );
 }

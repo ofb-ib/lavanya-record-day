@@ -33,6 +33,26 @@ export function beep(long = false): void {
   }
 }
 
+/** A short pop: a burst of filtered noise. */
+export function popSound(): void {
+  try {
+    audio ??= new AudioContext();
+    const len = Math.floor(audio.sampleRate * 0.12);
+    const buf = audio.createBuffer(1, len, audio.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+    const src = audio.createBufferSource();
+    const filter = audio.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 1400;
+    src.buffer = buf;
+    src.connect(filter).connect(audio.destination);
+    src.start();
+  } catch {
+    // No sound available.
+  }
+}
+
 let lock: WakeLockSentinel | null = null;
 
 export async function keepAwake(on: boolean): Promise<void> {

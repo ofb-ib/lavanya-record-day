@@ -1,8 +1,83 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import confetti from "canvas-confetti";
+import { popSound } from "./lib/device";
 
 const BALLOON_COLOURS = ["#D6A646", "#C94F6D", "#4F7BD6", "#F7F1E3", "#8E5BC9"];
 
-/** Twinkling stars and slowly rising balloons behind every screen. */
+interface Balloon {
+  id: number;
+  colour: string;
+  left: number;
+  duration: number;
+  delay: number;
+}
+
+const MAX_BALLOONS = 36;
+let nextId = 0;
+
+function makeBalloon(pops: number, delay: number): Balloon {
+  return {
+    id: nextId++,
+    colour: BALLOON_COLOURS[Math.floor(Math.random() * BALLOON_COLOURS.length)],
+    left: 2 + Math.random() * 86,
+    duration: Math.max(4.5, 14 - pops * 0.6) + Math.random() * 3,
+    delay,
+  };
+}
+
+/** Balloons float up over the page. Every pop sends up more, faster, than the last. */
+export function Balloons() {
+  const [balloons, setBalloons] = useState<Balloon[]>(() =>
+    Array.from({ length: 5 }, (_, i) => makeBalloon(0, i * 2.8)),
+  );
+  const [pops, setPops] = useState(0);
+
+  function pop(b: Balloon, e: React.PointerEvent<HTMLButtonElement>) {
+    popSound();
+    confetti({
+      particleCount: 40,
+      spread: 360,
+      startVelocity: 18,
+      gravity: 0.8,
+      scalar: 0.8,
+      ticks: 90,
+      origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight },
+      colors: [b.colour, "#F7F1E3"],
+    });
+    const n = pops + 1;
+    setPops(n);
+    // Pop 1 sends up 2, pop 3 sends up 3, pop 5 sends up 4 ... until the sky is full.
+    const extra = 1 + Math.ceil(n / 2);
+    setBalloons((list) => {
+      const rest = list.filter((x) => x.id !== b.id);
+      const room = Math.max(0, MAX_BALLOONS - rest.length);
+      const fresh = Array.from({ length: Math.min(extra, room) }, (_, i) => makeBalloon(n, i * 0.35));
+      return [...rest, ...fresh];
+    });
+  }
+
+  return (
+    <div className="balloons">
+      {balloons.map((b) => (
+        <button
+          key={b.id}
+          type="button"
+          aria-label="Pop balloon"
+          className="balloon"
+          onPointerDown={(e) => pop(b, e)}
+          style={{
+            left: `${b.left}%`,
+            background: b.colour,
+            animationDelay: `${b.delay}s`,
+            animationDuration: `${b.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Twinkling stars behind every screen. */
 export function Sky() {
   const stars = useMemo(
     () => Array.from({ length: 40 }, () => ({ left: Math.random() * 100, top: Math.random() * 100, delay: Math.random() * 3 })),
@@ -12,13 +87,6 @@ export function Sky() {
     <div className="sky" aria-hidden="true">
       {stars.map((s, i) => (
         <span key={i} className="star" style={{ left: `${s.left}%`, top: `${s.top}%`, animationDelay: `${s.delay}s` }} />
-      ))}
-      {BALLOON_COLOURS.map((c, i) => (
-        <span
-          key={c}
-          className="balloon"
-          style={{ left: `${8 + i * 20}%`, background: c, animationDelay: `${i * 2.8}s`, animationDuration: `${13 + i * 1.5}s` }}
-        />
       ))}
     </div>
   );

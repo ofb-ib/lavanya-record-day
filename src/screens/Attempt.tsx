@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { WorldRecord } from "../lib/types";
-import { formatValue, peopleNeeded, unitWord } from "../lib/format";
+import { formatValue, unitWord } from "../lib/format";
 import { beep, keepAwake } from "../lib/device";
 
 interface Props {
   record: WorldRecord;
+  crewSize: number;
   onResult: (score: number) => void;
   onBack: () => void;
 }
 
 type Phase = "ready" | "countdown" | "running" | "done";
 
-export function Attempt({ record: r, onResult, onBack }: Props) {
+export function Attempt({ record: r, crewSize, onResult, onBack }: Props) {
   const timed = r.measure === "most" && r.attemptSeconds !== null;
   const stopwatch = r.measure !== "most";
   const [phase, setPhase] = useState<Phase>(timed || stopwatch ? "ready" : "done");
@@ -87,7 +88,14 @@ export function Attempt({ record: r, onResult, onBack }: Props) {
 
   const score = Number(entry.replace(",", "."));
   const valid = entry.trim() !== "" && Number.isFinite(score) && score >= 0;
-  const people = peopleNeeded(r);
+  const need = r.format === "solo" ? 1 : r.teamSize;
+  const short = need !== null && need > crewSize ? need - crewSize : 0;
+  const people =
+    need === null
+      ? "Any number of people can join in."
+      : short > 0
+        ? `This record needs ${need} people. You have ${crewSize}, so grab ${short} more.`
+        : null;
 
   return (
     <section className="stack">
