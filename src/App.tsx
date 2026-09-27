@@ -102,7 +102,7 @@ export default function App() {
               Add your record attempt
             </button>
             <button type="button" className="secondary" onClick={() => setStep("game")}>
-              Balloon pop challenge
+              Balloon pop record
             </button>
           </section>
         )}

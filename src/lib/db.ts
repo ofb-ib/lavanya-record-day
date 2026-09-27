@@ -43,7 +43,7 @@ export async function addRecord(entry: AddedRecord): Promise<void> {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
 }
 
-// ---------- Balloon pop challenge leaderboard ----------
+// ---------- Balloon pop record leaderboard ----------
 
 export type Device = "mobile" | "laptop";
 

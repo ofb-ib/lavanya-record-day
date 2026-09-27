@@ -242,7 +242,7 @@ body {
 .crew li button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--gold); color: var(--navy); font-weight: 700; line-height: 1; }
 .cert-crew { font-size: 0.95rem; font-weight: 600; }
 
-/* Balloon pop challenge */
+/* Balloon pop record */
 .record-card { display: flex; flex-direction: column; gap: 2px; padding: 18px; border-radius: 16px; border: 2px solid var(--gold); background: var(--navy-2); text-align: center; }
 .record-card strong { font-family: var(--serif); font-weight: 400; font-size: 2.6rem; color: var(--gold); line-height: 1.1; }
 .game-count { margin-top: 20vh; font-size: 8rem; animation: popIn .4s cubic-bezier(.2,1.6,.4,1) both; }

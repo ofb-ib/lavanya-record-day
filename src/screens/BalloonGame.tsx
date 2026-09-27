@@ -198,7 +198,7 @@ export function BalloonGame({ defaultName, onExit }: Props) {
 
       {phase === "intro" && (
         <>
-          <h1 className="display shine">Balloon pop challenge</h1>
+          <h1 className="display shine">Balloon pop record</h1>
           <p className="lead">Pop as many balloons as you can in {GAME_SECONDS} seconds. They get faster as the clock runs down.</p>
           {podium}
           <button type="button" className="primary big" onClick={start}>
