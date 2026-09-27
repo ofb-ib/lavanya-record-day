@@ -307,7 +307,6 @@ export default function App() {
           />
         )}
       </main>
-      <footer className="footer">Just for fun. Not affiliated with Guinness World Records.</footer>
       {step !== "game" && <Balloons edges={step !== "welcome"} />}
     </div>
   );
