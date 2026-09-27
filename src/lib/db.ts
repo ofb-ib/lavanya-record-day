@@ -53,3 +53,50 @@ export async function listRecords(): Promise<AddedRecord[]> {
   }
   return readLocal();
 }
+
+// ---------- Balloon pop challenge leaderboard ----------
+
+export interface BalloonScore {
+  id?: number;
+  name: string;
+  score: number;
+}
+
+const SCORES_TABLE = "balloon_scores";
+const LOCAL_SCORES_KEY = "lrd-balloon-scores";
+
+function readLocalScores(): BalloonScore[] {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_SCORES_KEY) ?? "[]") as BalloonScore[];
+  } catch {
+    return [];
+  }
+}
+
+export async function topScores(limit = 3): Promise<BalloonScore[]> {
+  if (sharedDb) {
+    const res = await fetch(`${URL}/rest/v1/${SCORES_TABLE}?select=id,name,score&order=score.desc,created_at.asc&limit=${limit}`, {
+      headers: headers(),
+    });
+    if (!res.ok) throw new Error(`Load failed (${res.status})`);
+    return (await res.json()) as BalloonScore[];
+  }
+  return readLocalScores().sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+export async function addScore(entry: BalloonScore): Promise<void> {
+  if (sharedDb) {
+    const res = await fetch(`${URL}/rest/v1/${SCORES_TABLE}`, {
+      method: "POST",
+      headers: { ...headers(), Prefer: "return=minimal" },
+      body: JSON.stringify(entry),
+    });
+    if (!res.ok) throw new Error(`Save failed (${res.status})`);
+    return;
+  }
+  try {
+    localStorage.setItem(LOCAL_SCORES_KEY, JSON.stringify([...readLocalScores(), entry]));
+  } catch {
+    // Private mode: nothing is remembered.
+  }
+}

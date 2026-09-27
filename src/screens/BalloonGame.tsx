@@ -1,37 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { beep, burst, keepAwake, popSound } from "../lib/device";
+import { addScore, topScores, type BalloonScore } from "../lib/db";
 
 const GAME_SECONDS = 30;
 const COLOURS = ["#D6A646", "#C94F6D", "#4F7BD6", "#F7F1E3", "#8E5BC9"];
-const RECORD_KEY = "lrd-balloon-record";
-
-interface Best {
-  score: number;
-  name: string;
-}
-
 interface Balloon {
   id: number;
   colour: string;
   left: number;
   duration: number;
-}
-
-function readBest(): Best | null {
-  try {
-    return JSON.parse(localStorage.getItem(RECORD_KEY) ?? "null") as Best | null;
-  } catch {
-    return null;
-  }
-}
-
-function writeBest(best: Best): void {
-  try {
-    localStorage.setItem(RECORD_KEY, JSON.stringify(best));
-  } catch {
-    // Private mode: the record lasts until the page closes.
-  }
 }
 
 type Phase = "intro" | "countdown" | "playing" | "over";
@@ -48,13 +26,22 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   const [score, setScore] = useState(0);
   const [left, setLeft] = useState(GAME_SECONDS);
   const [balloons, setBalloons] = useState<Balloon[]>([]);
-  const [best, setBest] = useState<Best | null>(readBest);
+  const [top, setTop] = useState<BalloonScore[]>([]);
   const [name, setName] = useState(defaultName);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const refresh = () => topScores(3).then(setTop).catch(() => undefined);
+  useEffect(() => {
+    refresh();
+  }, []);
   const nextId = useRef(0);
   const startedAt = useRef(0);
 
-  const beaten = phase === "over" && score > 0 && (best === null || score > best.score);
+  const best = top[0] ?? null;
+  // Top three if there's a free spot, or it beats third place.
+  const madeTop3 = phase === "over" && score > 0 && (top.length < 3 || score > top[top.length - 1].score);
+  const beaten = madeTop3 && (best === null || score > best.score);
 
   useEffect(() => {
     keepAwake(phase === "countdown" || phase === "playing");
@@ -113,12 +100,13 @@ export function BalloonGame({ defaultName, onExit }: Props) {
   }, [phase]);
 
   useEffect(() => {
+    if (madeTop3 && !beaten) burst();
     if (beaten) {
       burst(true);
       const again = window.setTimeout(() => burst(true), 900);
       return () => window.clearTimeout(again);
     }
-  }, [beaten]);
+  }, [beaten, madeTop3]);
 
   function pop(b: Balloon, e: React.PointerEvent<HTMLButtonElement>) {
     popSound();
@@ -135,7 +123,19 @@ export function BalloonGame({ defaultName, onExit }: Props) {
     setBalloons((list) => list.filter((x) => x.id !== b.id));
   }
 
+  async function save() {
+    setSaving(true);
+    try {
+      await addScore({ score, name: name.trim() || "Mystery guest" });
+      await refresh();
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function start() {
+    refresh();
     setScore(0);
     setLeft(GAME_SECONDS);
     setCountdown(3);
@@ -143,12 +143,17 @@ export function BalloonGame({ defaultName, onExit }: Props) {
     setPhase("countdown");
   }
 
-  function save() {
-    const record = { score, name: name.trim() || "Mystery guest" };
-    writeBest(record);
-    setBest(record);
-    setSaved(true);
-  }
+  const podium = (
+    <ol className="podium">
+      {[0, 1, 2].map((i) => (
+        <li key={i} className={`place-${i + 1}`}>
+          <span className="medal">{i + 1}</span>
+          <span className="podium-name">{top[i]?.name ?? "Up for grabs"}</span>
+          <strong>{top[i] ? `${top[i].score}` : ""}</strong>
+        </li>
+      ))}
+    </ol>
+  );
 
   return (
     <section className="stack game">
@@ -160,11 +165,8 @@ export function BalloonGame({ defaultName, onExit }: Props) {
         <>
           <h1 className="display shine">Balloon pop challenge</h1>
           <p className="lead">Pop as many balloons as you can in {GAME_SECONDS} seconds. They get faster as the clock runs down.</p>
-          <div className="record-card">
-            <span>The party record to beat</span>
-            <strong>{best ? `${best.score} balloons` : "No record yet"}</strong>
-            {best && <span>set by {best.name}</span>}
-          </div>
+          <h2>Top three</h2>
+          {podium}
           <button type="button" className="primary big" onClick={start}>
             Start
           </button>
@@ -189,18 +191,15 @@ export function BalloonGame({ defaultName, onExit }: Props) {
         <>
           {beaten ? (
             <h1 className="win">New party record: {score} balloons!</h1>
+          ) : madeTop3 ? (
+            <h1 className="win">{score} balloons. You made the top three!</h1>
           ) : (
-            <h1>
-              {score} balloons popped
-            </h1>
+            <h1>{score} balloons popped</h1>
           )}
-          {!beaten && best && (
-            <p className="lead">
-              {best.score - score + 1} more to beat {best.name}'s record of {best.score}.
-            </p>
+          {!madeTop3 && top.length === 3 && (
+            <p className="lead">{top[2].score - score + 1} more to get on the podium.</p>
           )}
-          {beaten && best && !saved && <p className="lead">You beat {best.name}'s {best.score}.</p>}
-          {beaten && !saved && (
+          {madeTop3 && !saved && (
             <form
               className="stack"
               onSubmit={(e) => {
@@ -209,23 +208,27 @@ export function BalloonGame({ defaultName, onExit }: Props) {
               }}
             >
               <label className="field">
-                <span>Put your name on the record</span>
+                <span>Put your name on the board</span>
                 <input id="game-name" autoComplete="off" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
               </label>
-              <button type="submit" className="primary">
-                Save my record
+              <button type="submit" className="primary" disabled={saving}>
+                {saving ? "Saving..." : "Save my score"}
               </button>
             </form>
           )}
-          {(saved || !beaten) && (
-            <div className="actions">
-              <button type="button" className="primary" onClick={start}>
-                Play again
-              </button>
-              <button type="button" className="secondary" onClick={onExit}>
-                Back to the records
-              </button>
-            </div>
+          {(saved || !madeTop3) && (
+            <>
+              <h2>Top three</h2>
+              {podium}
+              <div className="actions">
+                <button type="button" className="primary" onClick={start}>
+                  Play again
+                </button>
+                <button type="button" className="secondary" onClick={onExit}>
+                  Back to the records
+                </button>
+              </div>
+            </>
           )}
         </>
       )}
