@@ -14,7 +14,7 @@ import { burst } from "./lib/device";
 
 const Hero3D = lazy(() => import("./Hero3D"));
 
-const QUESTIONS = ["format", "vibe", "quiz", "hobbies", "trick", "bravery"] as const;
+const QUESTIONS = ["format", "vibe", "quiz", "hobbies", "bravery"] as const;
 type Question = (typeof QUESTIONS)[number];
 type Step = "welcome" | Question | "drumroll" | "reveal" | "chosen" | "game" | "party";
 
@@ -160,42 +160,6 @@ export default function App() {
             onChange={(hobbies) => set({ hobbies })}
             onNext={next}
           />
-        )}
-
-        {step === "trick" && (
-          <form
-            className="stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              next();
-            }}
-          >
-            <h1>What's your party trick?</h1>
-            <label className="field">
-              <span>Party trick</span>
-              <input
-                id="trick"
-                autoComplete="off"
-                maxLength={120}
-                value={answers.trick}
-                onChange={(e) => set({ trick: e.target.value })}
-                placeholder="e.g. I can do the worm"
-              />
-            </label>
-            <button type="submit" className="primary">
-              Next
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => {
-                set({ trick: "" });
-                next();
-              }}
-            >
-              Skip
-            </button>
-          </form>
         )}
 
         {step === "bravery" && (

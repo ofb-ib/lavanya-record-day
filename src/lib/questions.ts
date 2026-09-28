@@ -7,7 +7,7 @@ export interface Option {
 export const FORMAT_OPTIONS: Option[] = [
   { value: "solo", label: "Just me", hint: "Solo glory." },
   { value: "pair", label: "Me and a partner", hint: "Grab a buddy." },
-  { value: "team", label: "A group of us", hint: "Round up 8 to 12 people." },
+  { value: "team", label: "A group of us", hint: "Round up 3 to 8 people." },
 ];
 
 export const VIBE_OPTIONS: Option[] = [

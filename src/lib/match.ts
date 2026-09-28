@@ -2,7 +2,6 @@ import recordsJson from "../data/records.json";
 import { KIT_ON_TABLE } from "../data/kit";
 import type { Answers, Bravery, WorldRecord } from "./types";
 import { HOBBY_OPTIONS, QUIZ_OPTIONS, VIBE_OPTIONS, labelFor } from "./questions";
-import { trickTags } from "./partyTrick";
 
 const ALL = recordsJson as WorldRecord[];
 const KIT = new Set(KIT_ON_TABLE);
@@ -17,12 +16,11 @@ const BANDS: Record<Bravery, [number, number]> = {
   moonshot: [4, 4],
 };
 
-function score(r: WorldRecord, a: Answers, tags: string[]): number {
+function score(r: WorldRecord, a: Answers): number {
   let s = 0;
   if (a.vibe && r.vibes.includes(a.vibe)) s += 3;
   if (a.quiz && r.talents.includes(a.quiz)) s += 2;
   s += 2 * Math.min(2, a.hobbies.filter((h) => r.talents.includes(h)).length);
-  s += 2 * Math.min(2, tags.filter((t) => r.talents.includes(t)).length);
   if (a.bravery) {
     const [lo, hi] = BANDS[a.bravery];
     const d = r.difficulty;
@@ -34,11 +32,12 @@ function score(r: WorldRecord, a: Answers, tags: string[]): number {
 /** Records in play, best match first. Ties are shuffled once per call. */
 export function rankRecords(a: Answers): WorldRecord[] {
   const available = IN_PLAY;
-  const byFormat = available.filter((r) => r.format === a.format);
+  // Groups are 3 to 8 people, so bigger team records are left out.
+  const fitsGroup = (r: WorldRecord) => r.format !== "team" || r.teamSize === null || (r.teamSize >= 3 && r.teamSize <= 8);
+  const byFormat = available.filter((r) => r.format === a.format && fitsGroup(r));
   const pool = byFormat.length ? byFormat : available;
-  const tags = trickTags(a.trick);
   return pool
-    .map((r) => ({ r, s: score(r, a, tags), tie: Math.random() }))
+    .map((r) => ({ r, s: score(r, a), tie: Math.random() }))
     .sort((x, y) => y.s - x.s || x.tie - y.tie)
     .map((x) => x.r);
 }
@@ -48,7 +47,6 @@ export function matchedReasons(r: WorldRecord, a: Answers): string {
   const reasons: string[] = [];
   if (a.quiz && r.talents.includes(a.quiz)) reasons.push(labelFor(QUIZ_OPTIONS, a.quiz));
   for (const h of a.hobbies) if (r.talents.includes(h)) reasons.push(labelFor(HOBBY_OPTIONS, h));
-  if (trickTags(a.trick).some((t) => r.talents.includes(t))) reasons.push("your party trick");
   if (reasons.length) return reasons.join(", ");
   return `you wanted ${labelFor(VIBE_OPTIONS, a.vibe).toLowerCase()}`;
 }

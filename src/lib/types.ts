@@ -30,7 +30,6 @@ export interface Answers {
   vibe: string | null;
   quiz: string | null;
   hobbies: string[];
-  trick: string;
   bravery: Bravery | null;
 }
 
@@ -39,6 +38,5 @@ export const emptyAnswers: Answers = {
   vibe: null,
   quiz: null,
   hobbies: [],
-  trick: "",
   bravery: null,
 };
